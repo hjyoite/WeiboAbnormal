@@ -8,6 +8,7 @@ from time import sleep
 from DBUtils.PooledDB import PooledDB
 import MySQLdb
 
+#Download page. 
 def download(url):
 	req = urllib2.Request(url)
 	while True:
@@ -20,6 +21,7 @@ def download(url):
 	html = response.read()
 	return html
 
+#Read configuration from file. 
 def read_config():
 	config = open('CONFIG')
 	paramDict = {}
@@ -33,8 +35,12 @@ def read_config():
 	return paramDict
 
 def main():
+	#Login Weibo. 
 	paramDict = read_config()
-	login(paramDict['username'], paramDict['password'])
+	if not login(paramDict['username'], paramDict['password']):
+		exit()
+
+	#Crawl the report board. 
 	'''pageTotal = 13653
 	pageStart = 13651
 	for pageNum in xrange(pageStart, pageTotal+1):
@@ -44,25 +50,30 @@ def main():
 		dstFile.write(page)
 		dstFile.close()
 		print pageNum'''
+
+	#Crawl the reports' mainpages. 
+	#Connect to the database. 
 	pool = PooledDB(MySQLdb, 1,  host = "localhost", user = "root", passwd = "123456", db = "abnormal")
 	conn = pool.connection()
 	cur = conn.cursor()
-	sql = 'select id, link from reportlinks where isCrawled=0'
+
+	#Read the list of URLs which haven't been crawled. 
+	sql = 'select id, url from reportlinks where isCrawled=0'
 	cur.execute(sql)
 	for entry in cur.fetchall():
+		#Dowload the page and write to the local file. 
 		url = 'http://service.account.weibo.com%s' % entry[1]
 		page = download(url)
 		dstFile = open(os.path.join('Report', '%d_%s' % (entry[0], entry[1][10:])), 'w')
 		dstFile.write(page)
 		dstFile.close()
+		#Update the URL's isCrawled flag. 
 		sql = 'update reportlinks set isCrawled=1 where id=%d' % entry[0]
 		cur.execute(sql)
 		conn.commit()
 		print entry[0], entry[1][10:]
 	cur.close()
 	conn.close()
-
-
 
 if __name__ == '__main__':
 	main()
