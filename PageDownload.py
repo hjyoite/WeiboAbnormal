@@ -19,6 +19,7 @@ def download(url):
 			print e
 			sleep(60)
 	html = response.read()
+	response.close()
 	return html
 
 #Read configuration from file. 

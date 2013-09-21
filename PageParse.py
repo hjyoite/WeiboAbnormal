@@ -6,10 +6,14 @@ import os
 import re
 from DBUtils.PooledDB import PooledDB
 import MySQLdb
+import time
+
 
 patternBoard = re.compile(r'/show\?rid')
 
-patternReporterCount = re.compile(r'\d+')
+patternNumber = re.compile(r'\d+')
+
+patternDate = re.compile(r'\d+-\d+-\d+ \d+:\d+:\d+')
 
 #Extract the URLs of reports from board. 
 def extract_links_from_board(htmlFile):
@@ -21,8 +25,6 @@ def extract_info_from_report(htmlFile):
 	soup = BeautifulSoup(open(htmlFile))
 	#Get visit count. 
 	visitCount = int(soup.find(class_='counter_txt').contents[1][5:])
-	#Get reporter count. 
-	reporterCount = int(patternReporterCount.search(soup.find(class_='W_f12 W_textb').contents[0]).group())
 	#Get winner in the trial. 1 for accuser, 2 for defender, 0 for draw. 
 	winTag = soup.find(class_='resault win')
 	if winTag:
@@ -33,8 +35,23 @@ def extract_info_from_report(htmlFile):
 			winner = 2
 	else:#Tag with class='resault in' can't be found if the trial's result is draw. 
 		winner = 0
-	return whoWin
-
+	#Get the judgement words. 
+	judge = soup.find(class_='p').text
+	#Get accuser count. 
+	accuserCount = int(patternNumber.search(soup.find(class_='W_f12 W_textb').text).group())
+	defendInfo = soup.find_all(class_='publisher')[-1].text.strip()
+	#Get defend content's type. ("用户", "评论", "微博")
+	defendType = defendInfo[3:5]
+	#Get defend content's publish time. 
+	defendTime = None
+	match = patternDate.search(defendInfo).group()
+	if match:
+		defendTime = time.strptime(match, '%Y-%m-%d %H:%M:%S')
+	#Get defend content. 
+	defendText = soup.find_all(class_='con')[-1].text.strip()
+	#Get defender ID. 
+	defenderID = soup.find_all(class_='mb W_f14')[-1].contents[1]['href'][19:]
+	return visitCount, accuserCount, defenderID, defendType, defendTime, defendText
 	
 
 def main():
@@ -74,7 +91,9 @@ def main():
 	srcFile.close()'''
 
 	#extract_info_from_report('Report/1_K1CaJ8A5h7q8i')
-	print extract_info_from_report('Report/100030_K1CaJ7Q5d66Yi')
+	parseResult = extract_info_from_report('Report/2_K1CaJ8A5h7qwk')
+	for item in parseResult:
+		print item
 	#for htmlFile in os.listdir('Report'):
 	#	if extract_info_from_report(os.path.join('Report', htmlFile)) == -1:
 	#		print htmlFile
