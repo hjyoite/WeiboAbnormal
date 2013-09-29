@@ -59,6 +59,11 @@ for itemTag in soup.find_all(class_='item'):
 	#soup.find_all(class_='feed clearfix')[0].a
 	#soup.find_all(class_='publisher')'''
 
+#dstFile = open('tmp2.html', 'w')
+#dstFile.write(html)
+#dstFile.close()'''
+
+
 #Login
 '''
 paramDict = read_config()
@@ -99,7 +104,7 @@ for f in os.listdir('Report'):
 		break
 	index += 1'''
 
-import shutil
+'''import shutil
 
 objDir = 'Report'
 newDir = 'Report_Detail'
@@ -111,6 +116,14 @@ for objFile in os.listdir(objDir):
 	shutil.copyfile(os.path.join(objDir, objFile), os.path.join(newDir, fname, fname))
 	for item in subDirs:
 		if not os.path.exists(os.path.join(newDir, fname, item)):
-			os.makedirs(os.path.join(newDir, fname, item))
+			os.makedirs(os.path.join(newDir, fname, item))'''
 
-
+paramDict = read_config()
+if not login(paramDict['username'], paramDict['password']):
+	exit()
+url = 'http://weibo.com/p/1005051083842602/info?from=page_100505&mod=TAB#place'
+req = urllib2.Request(url)
+response = urllib2.urlopen(req)
+f = open('user.html', 'w')
+f.write(response.read())
+f.close()
