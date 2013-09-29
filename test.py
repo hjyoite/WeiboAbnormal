@@ -22,7 +22,7 @@ def read_config():
 #if not login(paramDict['username'], paramDict['password']):
 #	exit()
 
-headers = {
+"""headers = {
 			#'Host' : 'service.account.weibo.com',
 			#'User-Agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0', 
 			#'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 
@@ -32,7 +32,7 @@ headers = {
 			#'X-Requested-With' : 'XMLHttpRequest',
 			'Referer' : 'http://service.account.weibo.com/show?rid=K1CaJ6ABj8awe', 
 		}
-"""req = urllib2.Request('http://service.account.weibo.com/aj/showblog?type=0&rid=K1CaJ6ABj8awe&page=1&_t=0&__rnd=1379655857509', headers=headers)
+req = urllib2.Request('http://service.account.weibo.com/aj/showblog?type=0&rid=K1CaJ6ABj8awe&page=1&_t=0&__rnd=1379655857509', headers=headers)
 response = urllib2.urlopen(req)
 dstFile = open('tmp', 'w')
 content = response.read()
@@ -47,7 +47,7 @@ dstFile.write(content)
 dstFile.close()
 response.close()"""
 
-srcFile = open('tmp.html')
+'''srcFile = open('tmp.html')
 content = eval(srcFile.read())
 srcFile.close()
 html = content['data']['html']
@@ -67,4 +67,14 @@ for itemTag in soup.find_all(class_='item'):
 	#soup.find_all(class_='publisher')
 #dstFile = open('tmp2.html', 'w')
 #dstFile.write(html)
-#dstFile.close()
+#dstFile.close()'''
+
+paramDict = read_config()
+if not login(paramDict['username'], paramDict['password']):
+	exit()
+url = 'http://weibo.com/p/1005051083842602/info?from=page_100505&mod=TAB#place'
+req = urllib2.Request(url)
+response = urllib2.urlopen(req)
+f = open('user.html', 'w')
+f.write(response.read())
+f.close()
