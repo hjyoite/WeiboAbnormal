@@ -38,7 +38,8 @@ def main():
 
 	'''读取未爬取的链接列表放入队列'''
 	urlQLock = threading.Lock()
-	sql = 'select id, url from reportlinks where isCrawled = 0'
+	tableName = 'users'
+	sql = 'select id, uid from %s where isCrawled = 0' % tableName
 	cur.execute(sql)
 	result = cur.fetchall()
 	urlQ = Queue(len(result))

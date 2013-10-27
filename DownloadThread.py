@@ -4,10 +4,16 @@
 import threading
 import os
 import urllib2
+import re
+#from DownloadComment import download_comments
+#from DownloadUser import download_user
+
+#headers = {'Referer' : 'http://service.account.weibo.com/show?rid=K1CaJ6Q5d6ake', }
+patternInfo = re.compile(r'type=(\d)&rid=(.+)&page=(\d+)')
 
 '''下载页面'''
-def download(url):
-	req = urllib2.Request(url)
+def download(url, headers={}):
+	req = urllib2.Request(url, headers = headers)
 	while True:
 		try:
 			response = urllib2.urlopen(req)
@@ -30,6 +36,8 @@ class DownloadThread(threading.Thread):
 		self.stop = False
 		
 	def run(self):
+		objFolder = 'Report_Detail'
+		subFolders = ['Astatement', 'Dstatement']
 		while True:
 			if self.stop:
 				break
@@ -43,15 +51,36 @@ class DownloadThread(threading.Thread):
 				iid, objUrl = self.urlQ.get()
 				self.urlQLock.release()
 			'''下载页面并写入本地文档'''
-			page = download('http://service.account.weibo.com%s' % objUrl)
+			#match = patternInfo.search(objUrl)
+			#reportType = int(match.group(1))
+			#reportId = match.group(2)
+			#pageNum = match.group(3)
+			headers = {'Referer' : 'http://service.account.weibo.com/show?rid=%s' % reportId, }
+			#rid = objUrl[10:]
+			#print rid
+			#result = download_comments(rid)
+			page = download(objUrl, headers=headers)
+			#subFolder = subFolders[reportType]
+			#dstFile = open(os.path.join(objFolder, reportId, subFolder, pageNum), 'w')
 			dstFile = open(os.path.join('Report', '%d_%s' % (iid, objUrl[10:])), 'w')
 			dstFile.write(page)
 			dstFile.close()
+			#result = download_user(objUrl)
 			'''更新数据库，标记该链接已完成爬取'''
-			sql = 'update reportlinks set isCrawled = 1 where id = %d' % iid
-			self.cur.execute(sql)
-			self.conn.commit()
-			print iid, objUrl[10:]
+			#tableName = 'reportlinks'
+			#sql = 'update %s set isCrawled = 1 where id = %d' % (tableName, iid)
+			#self.cur.execute(sql)
+			#self.conn.commit()
+			#print iid, reportId, pageNum, reportType
+			#if result:
+			if True:
+				tableName = 'users'
+				sql = 'update %s set isCrawled = 1 where id = %d' % (tableName, iid)
+				self.cur.execute(sql)
+				self.conn.commit()
+				print iid, objUrl, 'ok'
+			else:
+				print iid, objUrl, 'error'
 		self.clear()
 		print 'Sub thread End!'
 	

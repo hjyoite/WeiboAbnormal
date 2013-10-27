@@ -6,6 +6,8 @@ from WeiboLogin import login
 import urllib
 from bs4 import BeautifulSoup
 import os
+from DBUtils.PooledDB import PooledDB
+import MySQLdb
 
 def read_config():
 	config = open('CONFIG')
@@ -118,7 +120,7 @@ for objFile in os.listdir(objDir):
 		if not os.path.exists(os.path.join(newDir, fname, item)):
 			os.makedirs(os.path.join(newDir, fname, item))'''
 
-paramDict = read_config()
+'''paramDict = read_config()
 if not login(paramDict['username'], paramDict['password']):
 	exit()
 url = 'http://weibo.com/p/1005051083842602/info?from=page_100505&mod=TAB#place'
@@ -126,4 +128,211 @@ req = urllib2.Request(url)
 response = urllib2.urlopen(req)
 f = open('user.html', 'w')
 f.write(response.read())
+f.close()'''
+'''
+srcFile = open('ReportUser')
+pool = PooledDB(MySQLdb, 1,  host = "localhost", user = "root", passwd = "123456", db = "abnormal")
+conn = pool.connection()
+cur = conn.cursor()
+index = 0
+while True:
+	line = srcFile.readline()
+	if not line:
+		break
+	userDict = eval(line)
+	for user in userDict['accuserIds']:
+		sql = 'insert into users values (%d, "%s", 0)' % (index, user)
+		try:
+			cur.execute(sql)
+			print index, user
+			index += 1
+		except Exception, e:
+			print e
+	for user in userDict['defenderIds']:
+		sql = 'insert into users values (%d, "%s", 0)' % (index, user)
+		try:
+			cur.execute(sql)
+			print index, user
+			index += 1
+		except Exception, e:
+			print e
+conn.commit()
+cur.close()
+conn.close()
+srcFile.close()'''
+'''
+from GenerateUrl import replace_struct_time
+import time
+f = open('ParseResult')
+fout = open('ParseResult2', 'w')
+while True:
+	line = f.readline()
+	if not line:
+		break
+	line = replace_struct_time(line)
+	#reportDict = eval(line)
+	fout.write(line)
+fout.close()
+f.close()'''
+
+'''log = open('InsertLog', 'w')
+pool = PooledDB(MySQLdb, 1,  host = "localhost", user = "root", passwd = "123456", db = "abnormal")
+conn = pool.connection()
+cur = conn.cursor()
+import time
+f = open('ParseResult')
+tableKeys = ['accuser_id', 'defender_id', 'winner', 'accuse_time', 'accuser_count', 'visit_count', 'report_id', 
+			'defend_link', 'accuse_text', 'judge', 'defend_time', 'defend_text', 'defend_type']
+count = 0
+while True:
+	line = f.readline()
+	if not line:
+		break
+	reportDict = eval(line)
+	if reportDict['accuseTime']:
+		reportDict['accuseTime'] = '%s' % time.strftime('%Y-%m-%d %X', reportDict['accuseTime'])
+	if reportDict['defendTime']:
+		reportDict['defendTime'] = '%s' % time.strftime('%Y-%m-%d %X', reportDict['defendTime'])
+	for key, value in reportDict.items():
+		if value == None:
+			reportDict[key] = 'null'
+		elif type(value) == unicode:
+			reportDict[key] = '"%s"' % value.replace('"', '\'').encode('utf-8')
+		elif type(value) == str:
+			reportDict[key] = '"%s"' % value.replace('"', '\'')
+		else:
+			reportDict[key] = str(value)
+		newValue = reportDict[key]
+		slideCount = 0
+		for i in xrange(len(newValue)-2, -1, -1):
+			if newValue[i] == '\\':
+				slideCount += 1
+			else:
+				break
+		if slideCount % 2 != 0:
+			reportDict[key] = newValue[:-1] + r'\"'
+	sql = 'insert into reports (%s) values (%s)' % (', '.join(tableKeys), ', '.join(reportDict.values()))
+	while True:
+		try:
+			cur.execute(sql)
+			#conn.commit()
+			#break
+		except MySQLdb.Error, e:
+			if e[0] == 1062:
+				#(1062, "Duplicate entry 'K1CaJ7Q5d6K8i' for key 'PRIMARY'")
+				break
+			else:
+				print e
+				#print sql
+				#print repr(sql)
+				#for key, value in reportDict.items():
+				#	print key, 
+				#	if type(value) == str:
+				#		print value.decode('utf-8')
+				#	else:
+				#		print value
+				log.write('%d %s %s\n' % (count, reportDict['reportId'], str(e)))
+				exit()
+	count += 1
+	print count
+	#break
+conn.commit()
+cur.close()
+conn.close()
 f.close()
+log.close()'''
+'''
+dstFolder = 'Report'
+dstFile = open('SupportRate', 'w')
+count = 0
+for f in os.listdir(dstFolder):
+	soup = BeautifulSoup(open(os.path.join(dstFolder, f)))
+	bgRedTag = soup.find(class_='bg_red')
+	if bgRedTag:
+		supportA = int(bgRedTag.text)
+		supportD = int(soup.find(class_='bg_blue').text)
+	else:
+		supportA, supportD = 0, 0
+	rateDict = {}
+	rateDict['ReportId'] = f.split('_')[1]
+	rateDict['Accuser'] = supportA
+	rateDict['Defender'] = supportD
+	dstFile.write('%s\n' % str(rateDict))
+	count += 1
+	print count
+dstFile.close()'''
+
+'''
+pool = PooledDB(MySQLdb, 1,  host = "localhost", user = "root", passwd = "123456", db = "abnormal")
+conn = pool.connection()
+cur = conn.cursor()
+srcFile = open('ReportUser')
+count = 0
+while True:
+	line = srcFile.readline()
+	if not line:
+		break
+	userDict = eval(line)
+	rid = userDict['reportId']
+	for aid in userDict['accuserIds']:
+		sql = 'insert into reportusers values ("%s", "%s", 1)' % (rid, str(aid))
+		try:
+			cur.execute(sql)
+		except MySQLdb.Error, e:
+			if e[0] == 1062:
+				pass
+			else:
+				print e
+				break
+	for did in userDict['defenderIds']:
+		sql = 'insert into reportusers values ("%s", "%s", 2)' % (rid, str(did))
+		try:
+			cur.execute(sql)
+		except MySQLdb.Error, e:
+			if e[0] == 1062:
+				pass
+			else:
+				print e
+				break
+	count += 1
+	print count
+conn.commit()
+cur.close()
+conn.close()
+srcFile.close()
+'''
+
+'''
+pool = PooledDB(MySQLdb, 1,  host = "localhost", user = "root", passwd = "123456", db = "abnormal")
+conn = pool.connection()
+cur = conn.cursor()
+f = open('SupportRate')
+count = 0
+while True:
+	line = f.readline()
+	if not line:
+		break
+	rateDict = eval(line)
+	sql = 'update reports set accuser_support=%d, defender_support=%d where report_id="%s"' % (rateDict['Accuser'], rateDict['Defender'], rateDict['ReportId'])
+	cur.execute(sql)
+	count += 1
+	print count
+conn.commit()
+f.close()
+cur.close()
+conn.close()
+'''
+
+f = open('UserInfo')
+pool = PooledDB(MySQLdb, 1,  host = "localhost", user = "root", passwd = "123456", db = "abnormal")
+conn = pool.connection()
+cur = conn.cursor()
+while True:
+	line = f.readline()
+	if not line:
+		break
+	userDict = eval(line)
+	
+f.close()
+cur.close()
+conn.close()
